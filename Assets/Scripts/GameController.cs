@@ -106,18 +106,22 @@ public class GameController : MonoBehaviour
         showPossibleMove(possibleMove);
         printPossibleMove(possibleMove);
 
-        Debug.Log("Black Score : " + checkBlackScore(markedSpaces) + " / White Score : " + checkWhiteScore(markedSpaces));
+        //Debug.Log("Black Score : " + checkBlackScore(markedSpaces) + " / White Score : " + checkWhiteScore(markedSpaces));
 
         if (possibleMove.Count == 0)
         {
             if (whoTurn == 1)
             {
                 whoTurn = 0;
+                turnIcons[0].SetActive(true);
+                turnIcons[1].SetActive(false);
                 showPossibleMove(checkPossibleMove(markedSpaces)); 
             }
             else
             {
                 whoTurn = 1;
+                turnIcons[1].SetActive(true);
+                turnIcons[0].SetActive(false);
                 showPossibleMove(checkPossibleMove(markedSpaces));
             }
         }
@@ -125,7 +129,7 @@ public class GameController : MonoBehaviour
         {
             if (whoTurn == 1)
             {
-                StartCoroutine(AIPlay(possibleMove, 1));
+                StartCoroutine(AIPlay(possibleMove, 2));
             }
         }
         TextScore[0].text = "" + checkBlackScore(markedSpaces);
@@ -142,13 +146,16 @@ public class GameController : MonoBehaviour
         else if(level == 2)
         {
             yield return new WaitForSeconds(0.1F);
-            int i = bestMove(markedSpaces, 1000);
+            int[] markedSpacesClone = (int[]) markedSpaces.Clone();    //'cause when i'm giving the markedSpaces to the bestMove function it takes the reference.
+            int i = bestMove(markedSpacesClone, 4);
+            Debug.Log("bestMove[" + i + "] : " + (int)possibleMove[i]);
             othelloSpaces[(int)possibleMove[i]].onClick.Invoke();
             yield return null;
         }
     }
     int bestMove(int[] board, int depth)
     {
+        //Debug.Log("hi");
         double Infinity = double.PositiveInfinity;
         double bestScore = -Infinity;
         int move = 0;
@@ -156,9 +163,10 @@ public class GameController : MonoBehaviour
 
         for (int i = 0; i < possibleMove.Count; i++)
         {
-            board[i] = 2;
+            //Debug.Log("markedSpaces" + markedSpaces[(int)possibleMove[i]]);
+            board[(int)possibleMove[i]] = 2;
             int score = minimax(board, depth, false);
-            board[i] = -100;
+            board[(int)possibleMove[i]] = -100;
             if(score > bestScore)
             {
                 bestScore = score;
@@ -172,8 +180,11 @@ public class GameController : MonoBehaviour
         double Infinity = double.PositiveInfinity;
         ArrayList possibleMove = checkPossibleMove(board);
 
+        //string s = isMaximizing ? "Yes" : "No";
+        //Debug.Log("isMaximizing : " + s);
         if (depth == 0)
         {
+            //Debug.Log("evaluationFct(board) : " + evaluationFct(board));
             return evaluationFct(board);
         }
 
@@ -182,9 +193,9 @@ public class GameController : MonoBehaviour
             double bestScore = -Infinity;
             for (int i = 0; i < possibleMove.Count; i++)
             {
-                board[i] = 2;
+                board[(int)possibleMove[i]] = 2;
                 int score = minimax(board, depth - 1, false);
-                board[i] = -100;
+                board[(int)possibleMove[i]] = -100;
                 bestScore = Math.Max(score, bestScore);
             }
             return (int)bestScore;
@@ -194,9 +205,9 @@ public class GameController : MonoBehaviour
             double bestScore = Infinity;
             for (int i = 0; i < possibleMove.Count; i++)
             {
-                board[i] = 1;
+                board[(int)possibleMove[i]] = 1;
                 int score = minimax(board, depth - 1, true);
-                board[i] = -100;
+                board[(int)possibleMove[i]] = -100;
                 bestScore = Math.Min(score, bestScore);
             }
             return (int)bestScore;
@@ -256,7 +267,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row + 1) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col + 1));
+                                if(!possibleMove.Contains((row + 1) * 8 + (col + 1)))
+                                    possibleMove.Add((row + 1) * 8 + (col + 1));
                             }
                     }
                     if (checkTm(row, col, 1))
@@ -264,7 +276,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col) >= 0 && (col) <= 7)
                             if (board[(row + 1) * 8 + (col)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col));
+                                if (!possibleMove.Contains((row + 1) * 8 + (col)))
+                                    possibleMove.Add((row + 1) * 8 + (col));
                             }
                     }
                     if (checkTr(row, col, 1))
@@ -272,7 +285,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row + 1) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row + 1) * 8 + (col - 1)))
+                                    possibleMove.Add((row + 1) * 8 + (col - 1));
                             }
                     }
                     if (checkMl(row, col, 1))
@@ -280,7 +294,8 @@ public class GameController : MonoBehaviour
                         if ((row) >= 0 && (row) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row) * 8 + (col + 1));
+                                if (!possibleMove.Contains((row) * 8 + (col + 1)))
+                                    possibleMove.Add((row) * 8 + (col + 1));
                             }
                     }
                     if (checkMr(row, col, 1))
@@ -288,7 +303,8 @@ public class GameController : MonoBehaviour
                         if ((row) >= 0 && (row) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row) * 8 + (col - 1)))
+                                    possibleMove.Add((row) * 8 + (col - 1));
                             }
                     }
                     if (checkBl(row, col, 1))
@@ -296,7 +312,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row - 1) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col + 1));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col + 1)))
+                                    possibleMove.Add((row - 1) * 8 + (col + 1));
                             }
                     }
                     if (checkBm(row, col, 1))
@@ -304,7 +321,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col) >= 0 && (col) <= 7)
                             if (board[(row - 1) * 8 + (col)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col)))
+                                    possibleMove.Add((row - 1) * 8 + (col));
                             }
                     }
                     if (checkBr(row, col, 1))
@@ -312,7 +330,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row - 1) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col - 1)))
+                                    possibleMove.Add((row - 1) * 8 + (col - 1));
                             }
                     }
                 }
@@ -332,7 +351,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row + 1) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col + 1));
+                                if (!possibleMove.Contains((row + 1) * 8 + (col + 1)))
+                                    possibleMove.Add((row + 1) * 8 + (col + 1));
                             }
                     }
                     if (checkTm(row, col, 2))
@@ -340,7 +360,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col) >= 0 && (col) <= 7)
                             if (board[(row + 1) * 8 + (col)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col));
+                                if (!possibleMove.Contains((row + 1) * 8 + (col)))
+                                    possibleMove.Add((row + 1) * 8 + (col));
                             }
                     }
                     if (checkTr(row, col, 2))
@@ -348,7 +369,8 @@ public class GameController : MonoBehaviour
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row + 1) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row + 1) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row + 1) * 8 + (col - 1)))
+                                    possibleMove.Add((row + 1) * 8 + (col - 1));
                             }
                     }
                     if (checkMl(row, col, 2))
@@ -356,7 +378,8 @@ public class GameController : MonoBehaviour
                         if ((row) >= 0 && (row) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row) * 8 + (col + 1));
+                                if (!possibleMove.Contains((row) * 8 + (col + 1)))
+                                    possibleMove.Add((row) * 8 + (col + 1));
                             }
                     }
                     if (checkMr(row, col, 2))
@@ -364,7 +387,8 @@ public class GameController : MonoBehaviour
                         if ((row) >= 0 && (row) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row) * 8 + (col - 1)))
+                                    possibleMove.Add((row) * 8 + (col - 1));
                             }
                     }
                     if (checkBl(row, col, 2))
@@ -372,7 +396,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
                             if (board[(row - 1) * 8 + (col + 1)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col + 1));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col + 1)))
+                                    possibleMove.Add((row - 1) * 8 + (col + 1));
                             }
                     }
                     if (checkBm(row, col, 2))
@@ -380,7 +405,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col) >= 0 && (col) <= 7)
                             if (board[(row - 1) * 8 + (col)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col)))
+                                    possibleMove.Add((row - 1) * 8 + (col));
                             }
                     }
                     if (checkBr(row, col, 2))
@@ -388,7 +414,8 @@ public class GameController : MonoBehaviour
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
                             if (board[(row - 1) * 8 + (col - 1)] == -100)
                             {
-                                possibleMove.Add((row - 1) * 8 + (col - 1));
+                                if (!possibleMove.Contains((row - 1) * 8 + (col - 1)))
+                                    possibleMove.Add((row - 1) * 8 + (col - 1));
                             }
                     }
                 }
