@@ -10,6 +10,7 @@ public class GameController : MonoBehaviour
     public int whoTurn;
     public int turnCount;
     public GameObject[] turnIcons;
+    public Text[] TextScore;
     public Sprite[] playerIcons;
     public Button[] othelloSpaces;
     public int[] markedSpaces;
@@ -24,7 +25,9 @@ public class GameController : MonoBehaviour
     {
         whoTurn = 0;
         turnCount = 0;
-        for(int i=0; i<othelloSpaces.Length; i++)
+        turnIcons[0].SetActive(true);
+        turnIcons[1].SetActive(false);
+        for (int i=0; i<othelloSpaces.Length; i++)
         {
             if(i!=27 && i != 28 && i != 35 && i != 36)
             {
@@ -39,6 +42,8 @@ public class GameController : MonoBehaviour
                 markedSpaces[i] = -100;
             }
         }
+        TextScore[0].text = "" + checkBlackScore(markedSpaces);
+        TextScore[1].text = "" + checkWhiteScore(markedSpaces);
         clearPossMove();
         //checkPossibleMove();
         ArrayList possibleMoves = checkPossibleMove(markedSpaces);
@@ -84,10 +89,14 @@ public class GameController : MonoBehaviour
         */
         if (whoTurn == 0)
         {
+            turnIcons[1].SetActive(true);
+            turnIcons[0].SetActive(false);
             whoTurn = 1;
         }
         else
         {
+            turnIcons[0].SetActive(true);
+            turnIcons[1].SetActive(false);
             whoTurn = 0;
         }
         clearPossMove();
@@ -119,6 +128,8 @@ public class GameController : MonoBehaviour
                 StartCoroutine(AIPlay(possibleMove, 1));
             }
         }
+        TextScore[0].text = "" + checkBlackScore(markedSpaces);
+        TextScore[1].text = "" + checkWhiteScore(markedSpaces);
     }
     IEnumerator AIPlay(ArrayList possibleMove, int level)
     {
