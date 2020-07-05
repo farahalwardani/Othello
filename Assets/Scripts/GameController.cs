@@ -41,7 +41,11 @@ public class GameController : MonoBehaviour
         }
         clearPossMove();
         //checkPossibleMove();
-        printPossibleMove(checkPossibleMove());
+        ArrayList possibleMoves = checkPossibleMove(markedSpaces);
+        printPossibleMove(possibleMoves);
+        showPossibleMove(possibleMoves);
+
+
     }
 
     // Update is called once per frame
@@ -89,33 +93,133 @@ public class GameController : MonoBehaviour
         clearPossMove();
         flipPiece(whichNumber);
         //checkPossibleMove();
-        ArrayList possibleMove = checkPossibleMove();
+        ArrayList possibleMove = checkPossibleMove(markedSpaces);
+        showPossibleMove(possibleMove);
         printPossibleMove(possibleMove);
-        if (whoTurn == 1)
+
+        Debug.Log("Black Score : " + checkBlackScore(markedSpaces) + " / White Score : " + checkWhiteScore(markedSpaces));
+
+        if (possibleMove.Count == 0)
         {
-            StartCoroutine(AIPlay(possibleMove,1));
+            if (whoTurn == 1)
+            {
+                whoTurn = 0;
+                showPossibleMove(checkPossibleMove(markedSpaces)); 
+            }
+            else
+            {
+                whoTurn = 1;
+                showPossibleMove(checkPossibleMove(markedSpaces));
+            }
+        }
+        else
+        {
+            if (whoTurn == 1)
+            {
+                StartCoroutine(AIPlay(possibleMove, 1));
+            }
         }
     }
     IEnumerator AIPlay(ArrayList possibleMove, int level)
     {
         if(level == 1)
         {
-            yield return new WaitForSeconds(1);
+            yield return new WaitForSeconds(0.1F);
             othelloSpaces[(int)possibleMove[0]].onClick.Invoke();
             yield return null;
         }
+        else if(level == 2)
+        {
+            yield return new WaitForSeconds(0.1F);
+            int i = bestMove(markedSpaces, 1000);
+            othelloSpaces[(int)possibleMove[i]].onClick.Invoke();
+            yield return null;
+        }
     }
-    void nextTurn()
+    int bestMove(int[] board, int depth)
     {
+        double Infinity = double.PositiveInfinity;
+        double bestScore = -Infinity;
+        int move = 0;
+        ArrayList possibleMove = checkPossibleMove(board);
 
+        for (int i = 0; i < possibleMove.Count; i++)
+        {
+            board[i] = 2;
+            int score = minimax(board, depth, false);
+            board[i] = -100;
+            if(score > bestScore)
+            {
+                bestScore = score;
+                move = i;
+            }
+        }
+        return move;
     }
-    void minimax(ArrayList possibleMove)
+    int minimax(int[] board, int depth, bool isMaximizing)
     {
+        double Infinity = double.PositiveInfinity;
+        ArrayList possibleMove = checkPossibleMove(board);
 
+        if (depth == 0)
+        {
+            return evaluationFct(board);
+        }
+
+        if (isMaximizing)
+        {
+            double bestScore = -Infinity;
+            for (int i = 0; i < possibleMove.Count; i++)
+            {
+                board[i] = 2;
+                int score = minimax(board, depth - 1, false);
+                board[i] = -100;
+                bestScore = Math.Max(score, bestScore);
+            }
+            return (int)bestScore;
+        }
+        else
+        {
+            double bestScore = Infinity;
+            for (int i = 0; i < possibleMove.Count; i++)
+            {
+                board[i] = 1;
+                int score = minimax(board, depth - 1, true);
+                board[i] = -100;
+                bestScore = Math.Min(score, bestScore);
+            }
+            return (int)bestScore;
+        }
     }
     public void quit()
     {
         Application.Quit();
+    }
+    //Evaluation function of the board : (Positive : Black Has more pieces on the board)
+    //                                   (Negative : White Has more pieces on the board)
+    int evaluationFct(int[] board)
+    {
+        return checkBlackScore(board) - checkWhiteScore(board);
+    }
+    int checkBlackScore(int[] board)
+    {
+        int blackScore = 0;
+        for (int i = 0; i < markedSpaces.Length; i++)
+        {
+            if (markedSpaces[i] == 1)
+                blackScore++;
+        }
+        return blackScore;
+    }
+    int checkWhiteScore(int[] board)
+    {
+        int whiteScore = 0;
+        for(int i=0; i< markedSpaces.Length; i++)
+        {
+            if (markedSpaces[i] == 2)
+                whiteScore++;
+        }
+        return whiteScore;
     }
     void flipPiece(int pos)
     {
@@ -123,96 +227,80 @@ public class GameController : MonoBehaviour
         int col = pos % 8;
         flipALL(row, col, markedSpaces[pos]);
     }
-    ArrayList checkPossibleMove()
+    ArrayList checkPossibleMove(int [] board)
     {
         ArrayList possibleMove = new ArrayList();
         //IDictionary<int, string> neighbors;
         if (whoTurn == 0)
         {
-            for(int i=0; i<markedSpaces.Length; i++)
+            for(int i=0; i< board.Length; i++)
             {
                 int row = i / 8;
                 int col = i % 8;
 
-                if (markedSpaces[i] == 2)
+                if (board[i] == 2)
                 {
                     if(checkTl(row, col, 1))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col + 1)] == -100)
+                            if (board[(row + 1) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col + 1));
                             }
                     }
                     if (checkTm(row, col, 1))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col) >= 0 && (col) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col)] == -100)
+                            if (board[(row + 1) * 8 + (col)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col));
                             }
                     }
                     if (checkTr(row, col, 1))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col - 1)] == -100)
+                            if (board[(row + 1) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col - 1));
                             }
                     }
                     if (checkMl(row, col, 1))
                     {
                         if ((row) >= 0 && (row) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row) * 8 + (col + 1)] == -100)
+                            if (board[(row) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row) * 8 + (col + 1));
                             }
                     }
                     if (checkMr(row, col, 1))
                     {
                         if ((row) >= 0 && (row) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row) * 8 + (col - 1)] == -100)
+                            if (board[(row) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row) * 8 + (col - 1));
                             }
                     }
                     if (checkBl(row, col, 1))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col + 1)] == -100)
+                            if (board[(row - 1) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col + 1));
                             }
                     }
                     if (checkBm(row, col, 1))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col) >= 0 && (col) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col)] == -100)
+                            if (board[(row - 1) * 8 + (col)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col));
                             }
                     }
                     if (checkBr(row, col, 1))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col - 1)] == -100)
+                            if (board[(row - 1) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col - 1));
                             }
                     }
@@ -221,90 +309,74 @@ public class GameController : MonoBehaviour
         }
         else if (whoTurn == 1)
         {
-            for (int i = 0; i < markedSpaces.Length; i++)
+            for (int i = 0; i < board.Length; i++)
             {
                 int row = i / 8;
                 int col = i % 8;
 
-                if (markedSpaces[i] == 1)
+                if (board[i] == 1)
                 {
                     if (checkTl(row, col, 2))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col + 1)] == -100)
+                            if (board[(row + 1) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col + 1));
                             }
                     }
                     if (checkTm(row, col, 2))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col) >= 0 && (col) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col)] == -100)
+                            if (board[(row + 1) * 8 + (col)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col));
                             }
                     }
                     if (checkTr(row, col, 2))
                     {
                         if ((row + 1) >= 0 && (row + 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row + 1) * 8 + (col - 1)] == -100)
+                            if (board[(row + 1) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row + 1) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row + 1) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row + 1) * 8 + (col - 1));
                             }
                     }
                     if (checkMl(row, col, 2))
                     {
                         if ((row) >= 0 && (row) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row) * 8 + (col + 1)] == -100)
+                            if (board[(row) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row) * 8 + (col + 1));
                             }
                     }
                     if (checkMr(row, col, 2))
                     {
                         if ((row) >= 0 && (row) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row) * 8 + (col - 1)] == -100)
+                            if (board[(row) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row) * 8 + (col - 1));
                             }
                     }
                     if (checkBl(row, col, 2))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col + 1) >= 0 && (col + 1) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col + 1)] == -100)
+                            if (board[(row - 1) * 8 + (col + 1)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col + 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col + 1)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col + 1));
                             }
                     }
                     if (checkBm(row, col, 2))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col) >= 0 && (col) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col)] == -100)
+                            if (board[(row - 1) * 8 + (col)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col));
                             }
                     }
                     if (checkBr(row, col, 2))
                     {
                         if ((row - 1) >= 0 && (row - 1) <= 7 && (col - 1) >= 0 && (col - 1) <= 7)
-                            if (markedSpaces[(row - 1) * 8 + (col - 1)] == -100)
+                            if (board[(row - 1) * 8 + (col - 1)] == -100)
                             {
-                                othelloSpaces[(row - 1) * 8 + (col - 1)].image.sprite = playerIcons[2];
-                                othelloSpaces[(row - 1) * 8 + (col - 1)].interactable = true;
                                 possibleMove.Add((row - 1) * 8 + (col - 1));
                             }
                     }
@@ -312,6 +384,14 @@ public class GameController : MonoBehaviour
             }
         }
         return possibleMove;
+    }
+    void showPossibleMove(ArrayList moves)
+    {
+        for(int i=0; i<moves.Count; i++)
+        {
+            othelloSpaces[(int)moves[i]].image.sprite = playerIcons[2];
+            othelloSpaces[(int)moves[i]].interactable = true;
+        }
     }
     void clearPossMove()
     {
