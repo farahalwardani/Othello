@@ -175,6 +175,7 @@ public class GameController : MonoBehaviour
     }
     public void othelloButton(int whichNumber)
     {
+        //Debug.Log("depth" + depth);
         if (!startButton.activeInHierarchy)
         {
             int row = whichNumber / 8;
