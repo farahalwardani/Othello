@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,13 +15,113 @@ public class GameController : MonoBehaviour
     public Sprite[] playerIcons;
     public Button[] othelloSpaces;
     public int[] markedSpaces;
+    public static int depth = 1;
+    public Text possMoveListUI ;
+    public Text moveListUI;
+    public GameObject startButton;
+    public GameObject stopButton;
+    public Dropdown levels;
+    public static int nbMove=0;
+
 
     // Start is called before the first frame update
     void Start()
     {
+
+        startButton.SetActive(true);
+        stopButton.SetActive(false);
+
+    }
+    public void StartGame()
+    {
+        startButton.SetActive(!startButton.activeInHierarchy);
+        stopButton.SetActive(!stopButton.activeInHierarchy);
+        levels.interactable = false ;
         gameSetup();
+        moveListUI.text = " ";
+        nbMove = 0;
+        moveListUI.text += "\n" + "<Start Game> " + "\n";
+
     }
 
+    public void StopGame()
+    {
+        moveListUI.text = " ";
+        moveListUI.text += "\n" + "<Stop Game> " + "\n";
+        possMoveListUI.text = " " ;
+        ResetGame();
+        clearPossMove();
+
+        startButton.SetActive(!startButton.activeInHierarchy);
+        stopButton.SetActive(!stopButton.activeInHierarchy);
+        levels.interactable = true;
+
+
+
+    }
+    void ResetGame()
+    {
+
+        for (int i = 0; i < othelloSpaces.Length; i++)
+        {
+            if ((i == 27) || (i == 36))
+            {
+
+                othelloSpaces[i].interactable = false;
+                othelloSpaces[i].GetComponent<Image>().sprite = playerIcons[1];
+
+            }
+            if ((i == 28) || (i == 35))
+            {
+
+                othelloSpaces[i].interactable = false;
+                othelloSpaces[i].GetComponent<Image>().sprite = playerIcons[0];
+            }
+            if (i != 27 && i != 28 && i != 35 && i != 36)
+            {
+                othelloSpaces[i].interactable = true;
+                othelloSpaces[i].GetComponent<Image>().sprite = null;
+            }
+        }
+
+        for (int i = 0; i < markedSpaces.Length; i++)
+        {
+            if ((i == 27) || (i == 36))
+            {
+
+                markedSpaces[i] = 2;
+            }
+            if ((i == 28) || (i == 35))
+            {
+
+                markedSpaces[i] = 1;
+            }
+            if (i != 27 && i != 28 && i != 35 && i != 36)
+            {
+                markedSpaces[i] = -1;
+            }
+        }
+
+        TextScore[0].text = "" + 2;
+        TextScore[1].text = "" + 2;
+        whoTurn = 0;
+        turnCount = 0;
+        turnIcons[0].SetActive(true);
+        turnIcons[1].SetActive(false);
+
+
+    }
+
+    public void HandleInputData(int val)
+    {
+        if (val == 0)
+          depth = 1;
+        else if (val == 1)
+           depth = 4;
+        else if (val == 2)
+            depth = 10;
+        else depth = 1;
+    }
     void gameSetup()
     {
         whoTurn = 0;
@@ -56,135 +157,142 @@ public class GameController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+
     }
     void printPossibleMove(ArrayList possibleMove)
     {
         String s = "";
+        int row, col;
+        possMoveListUI.text = "\n";
         for (int i = 0; i < possibleMove.Count; i++)
         {
-            s += possibleMove[i] + " ";
+             row = int.Parse(possibleMove[i].ToString()) / 8;
+             col = int.Parse(possibleMove[i].ToString()) % 8;
+            s += "(" + row +"," + col +") ; ";
+
         }
-        Debug.Log("Possible Moves : " + s);
+        possMoveListUI.text  += " " +s + "\n";
     }
     public void othelloButton(int whichNumber)
     {
-        othelloSpaces[whichNumber].image.sprite = playerIcons[whoTurn];
-        othelloSpaces[whichNumber].interactable = false;
-
-        markedSpaces[whichNumber] = whoTurn+1;
-        turnCount++;
-        /*
-        int[] Neighbors = getNeighbors(whichNumber);
-        String names = "" ;
-        for (int i = 0; i <Neighbors.Length; i++)
+        if (!startButton.activeInHierarchy)
         {
-            names += Neighbors[i] + " ";
-            //othelloSpaces[Neighbors[i]].image.sprite = playerIcons[2];
-        }
-        Debug.Log(names);
+            int row = whichNumber / 8;
+            int col = whichNumber % 8;
 
-        //int[] oldNeighbors = Neighbors;
-        //int oldWhichNumber = whichNumber;
-        */
-        if (whoTurn == 0)
-        {
-            turnIcons[1].SetActive(true);
-            turnIcons[0].SetActive(false);
-            whoTurn = 1;
-        }
-        else
-        {
-            turnIcons[0].SetActive(true);
-            turnIcons[1].SetActive(false);
-            whoTurn = 0;
-        }
-        clearPossMove();
-        flipPiece(whichNumber);
-        //checkPossibleMove();
-        ArrayList possibleMove = checkPossibleMove(markedSpaces);
-        showPossibleMove(possibleMove);
-        printPossibleMove(possibleMove);
+            othelloSpaces[whichNumber].image.sprite = playerIcons[whoTurn];
+            othelloSpaces[whichNumber].interactable = false;
 
-        //Debug.Log("Black Score : " + checkBlackScore(markedSpaces) + " / White Score : " + checkWhiteScore(markedSpaces));
-
-        if (possibleMove.Count == 0)
-        {
-            if (whoTurn == 1)
+            markedSpaces[whichNumber] = whoTurn + 1;
+            turnCount++;
+            nbMove++;
+            if (whoTurn == 0)
             {
-                whoTurn = 0;
-                turnIcons[0].SetActive(true);
-                turnIcons[1].SetActive(false);
-                showPossibleMove(checkPossibleMove(markedSpaces)); 
+                moveListUI.text += "" + nbMove + "- Black(" + row + "," + col + ")" + "\n";
+                turnIcons[1].SetActive(true);
+                turnIcons[0].SetActive(false);
+                whoTurn = 1;
             }
             else
             {
-                whoTurn = 1;
-                turnIcons[1].SetActive(true);
-                turnIcons[0].SetActive(false);
-                showPossibleMove(checkPossibleMove(markedSpaces));
+                moveListUI.text += "" + nbMove + "- White(" + row + "," + col + ")" + "\n";
+                turnIcons[0].SetActive(true);
+                turnIcons[1].SetActive(false);
+                whoTurn = 0;
             }
-        }
-        else
-        {
-            if (whoTurn == 1)
-            {
-                StartCoroutine(AIPlay(possibleMove, 2));
-            }
-        }
-        TextScore[0].text = "" + checkBlackScore(markedSpaces);
-        TextScore[1].text = "" + checkWhiteScore(markedSpaces);
-    }
-    IEnumerator AIPlay(ArrayList possibleMove, int level)
-    {
-        if(level == 1)
-        {
-            yield return new WaitForSeconds(0.1F);
-            othelloSpaces[(int)possibleMove[0]].onClick.Invoke();
-            yield return null;
-        }
-        else if(level == 2)
-        {
-            yield return new WaitForSeconds(0.1F);
-            int[] markedSpacesClone = (int[]) markedSpaces.Clone();    //'cause when i'm giving the markedSpaces to the bestMove function it takes the reference.
-            int i = bestMove(markedSpacesClone, 4);
-            Debug.Log("bestMove[" + i + "] : " + (int)possibleMove[i]);
-            othelloSpaces[(int)possibleMove[i]].onClick.Invoke();
-            yield return null;
-        }
-    }
-    int bestMove(int[] board, int depth)
-    {
-        //Debug.Log("hi");
-        double Infinity = double.PositiveInfinity;
-        double bestScore = -Infinity;
-        int move = 0;
-        ArrayList possibleMove = checkPossibleMove(board);
+            clearPossMove();
+            flipPiece(whichNumber);
+            ArrayList possibleMove = checkPossibleMove(markedSpaces);
+            showPossibleMove(possibleMove);
+            printPossibleMove(possibleMove);
 
-        for (int i = 0; i < possibleMove.Count; i++)
-        {
-            //Debug.Log("markedSpaces" + markedSpaces[(int)possibleMove[i]]);
-            board[(int)possibleMove[i]] = 2;
-            int score = minimax(board, depth, false);
-            board[(int)possibleMove[i]] = -100;
-            if(score > bestScore)
+           if (possibleMove.Count == 0)
             {
-                bestScore = score;
-                move = i;
+                if (whoTurn == 1)
+                {
+                    Debug.Log("White pass");
+                    whoTurn = 0;
+                    turnIcons[0].SetActive(true);
+                    turnIcons[1].SetActive(false);
+                    clearPossMove();
+                    showPossibleMove(checkPossibleMove(markedSpaces));
+                }
+                else
+                {
+                    Debug.Log("Black pass");
+                    whoTurn = 1;
+                    turnIcons[1].SetActive(true);
+                    turnIcons[0].SetActive(false);
+                    clearPossMove();
+                    possibleMove = checkPossibleMove(markedSpaces);
+                    showPossibleMove(possibleMove);
+                    printPossibleMove(possibleMove);
+                    StartCoroutine(AIPlay(possibleMove));
+                }
+            }
+            else
+            {
+                if (whoTurn == 1)
+                {
+                    StartCoroutine(AIPlay(possibleMove));
+                }
+            }
+            TextScore[0].text = "" + checkBlackScore(markedSpaces);
+            TextScore[1].text = "" + checkWhiteScore(markedSpaces);
+        }
+    }
+
+    IEnumerator AIPlay(ArrayList possibleMove)
+    {
+        yield return new WaitForSeconds(0.1F);
+        int[] markedSpacesClone = (int[]) markedSpaces.Clone();    //'cause when i'm giving the markedSpaces to the bestMove function it takes the reference.
+        int i = bestMove(markedSpacesClone, depth);
+        if (i >= 0 && i < possibleMove.Count)
+            othelloSpaces[(int)possibleMove[i]].onClick.Invoke();
+        yield return null;
+    }
+
+    int bestMove(int[] board, int depth)
+    {   ArrayList possibleMove = checkPossibleMove(board);
+        int move = 0;
+
+        if (depth == 1) {
+            System.Random random = new System.Random();
+            move = random.Next(possibleMove.Count);
+        }
+
+        else {
+            double Infinity = double.PositiveInfinity;
+            double bestScore = -Infinity;
+            double alpha = -Infinity;
+            double beta = Infinity;
+
+            for (int i = 0; i < possibleMove.Count; i++)
+            {
+                board[(int)possibleMove[i]] = 2;
+                int score = minimax(board, depth, false, alpha, beta);
+                board[(int)possibleMove[i]] = -100;
+                if (score >= bestScore)
+                {
+                    bestScore = score;
+                    move = i;
+                }
+                alpha = Math.Max(alpha, bestScore);
+                if (beta <= alpha)
+                    break;
+
             }
         }
         return move;
     }
-    int minimax(int[] board, int depth, bool isMaximizing)
+
+    int minimax(int[] board, int depth, bool isMaximizing, double alpha, double beta)
     {
         double Infinity = double.PositiveInfinity;
         ArrayList possibleMove = checkPossibleMove(board);
 
-        //string s = isMaximizing ? "Yes" : "No";
-        //Debug.Log("isMaximizing : " + s);
         if (depth == 0)
         {
-            //Debug.Log("evaluationFct(board) : " + evaluationFct(board));
             return evaluationFct(board);
         }
 
@@ -194,9 +302,12 @@ public class GameController : MonoBehaviour
             for (int i = 0; i < possibleMove.Count; i++)
             {
                 board[(int)possibleMove[i]] = 2;
-                int score = minimax(board, depth - 1, false);
+                int score = minimax(board, depth - 1, false, alpha, beta);
                 board[(int)possibleMove[i]] = -100;
                 bestScore = Math.Max(score, bestScore);
+                alpha = Math.Max(alpha, bestScore);
+                if (beta <= alpha)
+                    break;
             }
             return (int)bestScore;
         }
@@ -206,23 +317,24 @@ public class GameController : MonoBehaviour
             for (int i = 0; i < possibleMove.Count; i++)
             {
                 board[(int)possibleMove[i]] = 1;
-                int score = minimax(board, depth - 1, true);
+                int score = minimax(board, depth - 1, true, alpha, beta);
                 board[(int)possibleMove[i]] = -100;
                 bestScore = Math.Min(score, bestScore);
+                beta = Math.Min(beta, bestScore);
+                if (beta <= alpha)
+                    break;
             }
             return (int)bestScore;
         }
     }
-    public void quit()
-    {
-        Application.Quit();
-    }
+
     //Evaluation function of the board : (Positive : Black Has more pieces on the board)
     //                                   (Negative : White Has more pieces on the board)
     int evaluationFct(int[] board)
     {
         return checkBlackScore(board) - checkWhiteScore(board);
     }
+
     int checkBlackScore(int[] board)
     {
         int blackScore = 0;
@@ -233,6 +345,7 @@ public class GameController : MonoBehaviour
         }
         return blackScore;
     }
+
     int checkWhiteScore(int[] board)
     {
         int whiteScore = 0;
@@ -243,12 +356,14 @@ public class GameController : MonoBehaviour
         }
         return whiteScore;
     }
+
     void flipPiece(int pos)
     {
         int row = pos / 8;
         int col = pos % 8;
         flipALL(row, col, markedSpaces[pos]);
     }
+
     ArrayList checkPossibleMove(int [] board)
     {
         ArrayList possibleMove = new ArrayList();
@@ -423,6 +538,7 @@ public class GameController : MonoBehaviour
         }
         return possibleMove;
     }
+
     void showPossibleMove(ArrayList moves)
     {
         for(int i=0; i<moves.Count; i++)
@@ -442,166 +558,7 @@ public class GameController : MonoBehaviour
             }
         }
     }
-    int[] getNeighbors(int buttonPos)
-    {
-        int row = buttonPos / 8;
-        int col = buttonPos % 8;
 
-        int tl, tm, tr;
-        int ml, mr;
-        int bl, bm, br;
-        int[] neighbors;
-
-        tl = (row - 1) * 8 + (col - 1);
-        tm = (row - 1) * 8 + col;
-        tr = (row - 1) * 8 + (col + 1);
-        ml = row * 8 + (col - 1);
-        mr = row * 8 + (col + 1);
-        bl = (row + 1) * 8 + (col - 1);
-        bm = (row + 1) * 8 + col;
-        br = (row + 1) * 8 + (col + 1);
-
-        if(row == 0)
-        {
-            if(col == 0)
-            {
-                neighbors = new int[] {mr, bm, br};
-            }
-            else if(col == 7)
-            {
-                neighbors = new int[] { ml, bl, bm };
-            }
-            else
-            {
-                neighbors = new int[] { ml, mr, bl, bm, br};
-            }
-        }
-        else if (row == 7)
-        {
-            if (col == 0)
-            {
-                neighbors = new int[] { tm, tr, mr };
-            }
-            else if (col == 7)
-            {
-                neighbors = new int[] { tl, tm, ml };
-            }
-            else
-            {
-                neighbors = new int[] { tl, tm, tr, ml, mr };
-            }
-        }
-        else if (col == 0)
-        {
-            neighbors = new int[] { tm, tr, mr, bm, br };
-        }
-        else if (col == 7)
-        {
-            neighbors = new int[] { tl, tm, ml, bl, bm };
-        }
-        else
-        {
-            neighbors = new int[] { tl, tm, tr, ml, mr, bl, bm, br };
-        }
-
-        return neighbors;
-    }
-    IDictionary<int, string> getNeighborsLocation(int buttonPos)
-    {
-        int row = buttonPos / 8;
-        int col = buttonPos % 8;
-
-        int tl, tm, tr;
-        int ml, mr;
-        int bl, bm, br;
-
-        IDictionary<int, string> neighbors = new Dictionary<int, string>();
-
-        tl = (row - 1) * 8 + (col - 1);
-        tm = (row - 1) * 8 + col;
-        tr = (row - 1) * 8 + (col + 1);
-        ml = row * 8 + (col - 1);
-        mr = row * 8 + (col + 1);
-        bl = (row + 1) * 8 + (col - 1);
-        bm = (row + 1) * 8 + col;
-        br = (row + 1) * 8 + (col + 1);
-
-        if (row == 0)
-        {
-            if (col == 0)
-            {
-                neighbors.Add(mr, "mr");
-                neighbors.Add(bm, "bm");
-                neighbors.Add(br, "br");
-            }
-            else if (col == 7)
-            {
-                neighbors.Add(ml, "ml");
-                neighbors.Add(bl, "bl");
-                neighbors.Add(bm, "bm");
-            }
-            else
-            {
-                neighbors.Add(ml, "ml");
-                neighbors.Add(mr, "mr");
-                neighbors.Add(bl, "bl");
-                neighbors.Add(bm, "bm");
-                neighbors.Add(br, "br");
-            }
-        }
-        else if (row == 7)
-        {
-            if (col == 0)
-            {
-                neighbors.Add(tl, "tl");
-                neighbors.Add(tr, "tr");
-                neighbors.Add(mr, "mr");
-            }
-            else if (col == 7)
-            {
-                neighbors.Add(tl, "tl");
-                neighbors.Add(tm, "tm");
-                neighbors.Add(ml, "ml");
-            }
-            else
-            {
-                neighbors.Add(tl, "tl");
-                neighbors.Add(tm, "tm");
-                neighbors.Add(tr, "tr");
-                neighbors.Add(ml, "ml");
-                neighbors.Add(mr, "mr");
-            }
-        }
-        else if (col == 0)
-        {
-            neighbors.Add(tm, "tm");
-            neighbors.Add(tr, "tr");
-            neighbors.Add(mr, "mr");
-            neighbors.Add(bm, "bm");
-            neighbors.Add(br, "br");
-        }
-        else if (col == 7)
-        {
-            neighbors.Add(tl, "tl");
-            neighbors.Add(tm, "tm");
-            neighbors.Add(ml, "ml");
-            neighbors.Add(bl, "bl");
-            neighbors.Add(bm, "bm");
-        }
-        else
-        {
-            neighbors.Add(tl, "tl");
-            neighbors.Add(tm, "tm");
-            neighbors.Add(tr, "tr");
-            neighbors.Add(ml, "ml");
-            neighbors.Add(mr, "mr");
-            neighbors.Add(bl, "bl");
-            neighbors.Add(bm, "bm");
-            neighbors.Add(br, "br");
-        }
-
-        return neighbors;
-    }
     bool flipTl(int row, int col, int color)
     {
         int pos = row * 8 + col;
