@@ -108,7 +108,7 @@ public class GameController : MonoBehaviour
         else if (val == 1)
            depth = 4;
         else if (val == 2)
-            depth = 10;
+            depth = 7;
         else depth = 1;
     }
 
